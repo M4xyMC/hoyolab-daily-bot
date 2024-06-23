@@ -6,8 +6,9 @@ import sys
 from random import randint
 import subprocess
 import requests
-import browser_cookie3
+import rookiepy
 import json
+from rookiepy import to_cookiejar
 
 VER = '1.1.5 for Windows'
 
@@ -54,9 +55,9 @@ cookies = None
 try:
     browser = config['BROWSER'].lower()
     if browser == 'all':
-        cookies = browser_cookie3.load(domain_name=config['DOMAIN_NAME'])
+        cookies = rookiepy.load(domains=[config['DOMAIN_NAME']])
     elif browser in ['firefox', 'chrome', 'opera', 'edge', 'chromium']:
-        cookies = getattr(browser_cookie3, browser)(domain_name=config['DOMAIN_NAME'])
+        cookies = getattr(rookiepy, browser)(domains=[config['DOMAIN_NAME']])
     else:
         raise Exception("ERROR: Browser not defined!")
 except Exception as e:
@@ -70,6 +71,7 @@ except Exception as e:
     time.sleep(5)
     sys.exit(1)
 
+cookies = to_cookiejar(cookies)
 found = False
 for cookie in cookies:
     if cookie.name == "cookie_token_v2":
