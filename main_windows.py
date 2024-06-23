@@ -10,7 +10,6 @@ import browser_cookie3
 import json
 
 VER = '1.1.5 for Windows'
-UPDATE_CHANNEL = 'https://github.com/darkGrimoire/hoyolab-daily-bot/releases/latest'
 
 run_scheduler = True
 
@@ -50,28 +49,22 @@ except Exception as e:
     config_file = open(os.path.join(app_path, 'config.json'), 'w')
     config_file.write(json.dumps(config))
 
-
 # GET COOKIES
 cookies = None
 try:
-    if config['BROWSER'].lower() == 'all':
+    browser = config['BROWSER'].lower()
+    if browser == 'all':
         cookies = browser_cookie3.load(domain_name=config['DOMAIN_NAME'])
-    elif config['BROWSER'].lower() == 'firefox':
-        cookies = browser_cookie3.firefox(domain_name=config['DOMAIN_NAME'])
-    elif config['BROWSER'].lower() == 'chrome':
-        cookies = browser_cookie3.chrome(domain_name=config['DOMAIN_NAME'])
-    elif config['BROWSER'].lower() == 'opera':
-        cookies = browser_cookie3.opera(domain_name=config['DOMAIN_NAME'])
-    elif config['BROWSER'].lower() == 'edge':
-        cookies = browser_cookie3.edge(domain_name=config['DOMAIN_NAME'])
-    elif config['BROWSER'].lower() == 'chromium':
-        cookies = browser_cookie3.chromium(domain_name=config['DOMAIN_NAME'])
+    elif browser in ['firefox', 'chrome', 'opera', 'edge', 'chromium']:
+        cookies = getattr(browser_cookie3, browser)(domain_name=config['DOMAIN_NAME'])
     else:
         raise Exception("ERROR: Browser not defined!")
-except Exception as e:
-    print("Login information not found! Please login first to hoyolab once in Chrome/Firefox/Opera/Edge/Chromium before using the bot.")
+except:
+    print("Login information not found! Please login first to hoyolab once in Chrome/Firefox/Opera/Edge/Chromium "
+          "before using the bot.")
     print("You only need to login once for a year to https://www.hoyolab.com/genshin/ for this bot to work.")
-    log.write("Login information not found! Please login first to hoyolab once in Chrome/Firefox/Opera/Edge/Chromium before using the bot.\n")
+    log.write("Login information not found! Please login first to hoyolab once in Chrome/Firefox/Opera/Edge/Chromium "
+              "before using the bot.\n")
     log.write('LOGIN ERROR: cookies not found\n')
     log.close()
     time.sleep(5)
@@ -83,9 +76,11 @@ for cookie in cookies:
         found = True
         break
 if not found:
-    print("Login information not found! Please login first to hoyolab once in Chrome/Firefox/Opera/Edge/Chromium before using the bot.")
+    print("Login information not found! Please login first to hoyolab once in Chrome/Firefox/Opera/Edge/Chromium "
+          "before using the bot.")
     print("You only need to login once for a year to https://www.hoyolab.com/genshin/ for this bot to work.")
-    log.write("Login information not found! Please login first to hoyolab once in Chrome/Firefox/Opera/Edge/Chromium before using the bot.\n")
+    log.write("Login information not found! Please login first to hoyolab once in Chrome/Firefox/Opera/Edge/Chromium "
+              "before using the bot.\n")
     log.write('LOGIN ERROR: cookies not found\n')
     log.close()
     time.sleep(5)
@@ -109,7 +104,7 @@ if args.runascron:
 
 
 # API FUNCTIONS
-def getDailyStatus():
+def get_daily_status():
     headers = {
         'Accept': 'application/json, text/plain, */*',
         'Accept-Language': 'en-US,en;q=0.5',
@@ -142,15 +137,15 @@ def getDailyStatus():
         return None
 
 
-def isClaimed():
-    resp = getDailyStatus()
+def is_claimed():
+    resp = get_daily_status()
     if resp:
         return resp['data']['is_sign']
     else:
         return None
 
 
-def claimReward():
+def claim_reward():
     headers = {
         'Accept': 'application/json, text/plain, */*',
         'Accept-Language': 'en-US,en;q=0.5',
@@ -185,23 +180,27 @@ def claimReward():
 
 
 # SCHEDULER CONFIGURATION
-def configScheduler():
+def config_scheduler():
     print("Running scheduler...")
     cur_tz_offset = datetime.now().astimezone().utcoffset()
     target_tz_offset = timedelta(hours=config['SERVER_UTC'])
     delta = (cur_tz_offset - target_tz_offset)
     delta += timedelta(minutes=int(config['DELAY_MINUTE']))
-    if (config['RANDOMIZE']):
+    if config['RANDOMIZE']:
         delta += timedelta(seconds=randint(0, int(config['RANDOM_RANGE'])))
-    target_hour = int((24 + (delta.total_seconds()//3600)) % 24)
-    target_minute = int((60 + (delta.total_seconds()//60)) % 60)
+    target_hour = int((24 + (delta.total_seconds() // 3600)) % 24)
+    target_minute = int((60 + (delta.total_seconds() // 60)) % 60)
     target_seconds = int(delta.total_seconds() % 60)
     ret_code = subprocess.call((
         f'powershell',
         f'$Time = New-ScheduledTaskTrigger -Daily -At {target_hour}:{target_minute}:{target_seconds} \n',
-        f'$Action = New-ScheduledTaskAction -Execute \'{exec_path}\' {"" if config["RANDOMIZE"] else "-Argument -R"} -WorkingDirectory "{app_path}" \n',
-        f'$Setting = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -WakeToRun -RunOnlyIfNetworkAvailable -MultipleInstances Parallel -Priority 3 -RestartCount 30 -RestartInterval (New-TimeSpan -Minutes 1) \n',
-        f'Register-ScheduledTask -Force -TaskName "{config["SCHEDULER_NAME"]}" -Trigger $Time -Action $Action -Settings $Setting -Description "Genshin Hoyolab Daily Check-In Bot {VER}" -RunLevel Highest'
+        f'$Action = New-ScheduledTaskAction -Execute \'{exec_path}\' {"" if config["RANDOMIZE"] else "-Argument -R"} '
+        f'-WorkingDirectory "{app_path}" \n',
+        f'$Setting = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries '
+        f'-DontStopIfGoingOnBatteries -WakeToRun -RunOnlyIfNetworkAvailable -MultipleInstances Parallel -Priority 3 '
+        f'-RestartCount 30 -RestartInterval (New-TimeSpan -Minutes 1) \n',
+        f'Register-ScheduledTask -Force -TaskName "{config["SCHEDULER_NAME"]}" -Trigger $Time -Action $Action '
+        f'-Settings $Setting -Description "Genshin Hoyolab Daily Check-In Bot {VER}" -RunLevel Highest'
     ), creationflags=0x08000000)
     if ret_code:
         print("PERMISSION ERROR: please run as administrator to enable task scheduling")
@@ -214,29 +213,16 @@ def configScheduler():
         print("Program scheduled daily!")
 
 
-# UPDATE CHECKER
-def checkUpdates():
-    res = requests.get(UPDATE_CHANNEL)
-    newVer = res.url.split('/')[-1][1:]
-    thisVer = VER.split()[0]
-    if newVer > thisVer:
-        print(
-            f'New version (v{newVer}) available!\nPlease go to {UPDATE_CHANNEL} to download the new version.')
-        log.write(
-            f'New version (v{newVer}) available!\nPlease go to {UPDATE_CHANNEL} to download the new version.')
-        time.sleep(60)
-
-
 # MAIN PROGRAM
 def main():
     log.write(f'\nSTART BOT: {datetime.now().strftime("%d/%m/%Y %H:%M:%S")}\n')
     print("Connecting to mihoyo...")
     is_done = False
     while not is_done:
-        check = isClaimed()
-        if not check and check != None:
+        check = is_claimed()
+        if not check and check is not None:
             print("Reward not claimed yet. Claiming reward...")
-            resp = claimReward()
+            resp = claim_reward()
             if resp:
                 log.write(
                     f'Reward claimed at {datetime.now().strftime("%d %B, %Y | %H:%M:%S")}\n')
@@ -253,12 +239,11 @@ def main():
                 f'Error at {datetime.now().strftime("%d %B, %Y | %H:%M:%S")}, retrying...\n')
             print("There was an error... retrying in a minute")
             time.sleep(60)
-    checkUpdates()
     log.close()
 
 
 if __name__ == "__main__":
     if run_scheduler or config["RANDOMIZE"]:
-        configScheduler()
+        config_scheduler()
     main()
     time.sleep(2)
