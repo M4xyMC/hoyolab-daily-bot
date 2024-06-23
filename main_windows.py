@@ -219,8 +219,10 @@ def config_scheduler():
 def main():
     log.write(f'\nSTART BOT: {datetime.now().strftime("%d/%m/%Y %H:%M:%S")}\n')
     print("Connecting to mihoyo...")
+    max_retries = 3
+    attempts = 0
     is_done = False
-    while not is_done:
+    while not is_done and attempts < max_retries:
         check = is_claimed()
         if not check and check is not None:
             print("Reward not claimed yet. Claiming reward...")
@@ -237,10 +239,14 @@ def main():
             print("Reward has been claimed!")
             is_done = True
         if not is_done:
+            attempts += 1
             log.write(
                 f'Error at {datetime.now().strftime("%d %B, %Y | %H:%M:%S")}, retrying...\n')
             print("There was an error... retrying in a minute")
             time.sleep(60)
+    if not is_done:
+        log.write(f'Failed to claim reward after {max_retries} attempts.\n')
+        print(f"Failed to claim reward after {max_retries} attempts.")
     log.close()
 
 
