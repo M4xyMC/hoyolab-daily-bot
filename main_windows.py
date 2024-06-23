@@ -43,7 +43,7 @@ except Exception as e:
         'RANDOMIZE': False,
         'RANDOM_RANGE': 3600,
         'ACT_ID': 'e202102251931481',
-        'DOMAIN_NAME': '.mihoyo.com',
+        'DOMAIN_NAME': '.hoyolab.com',
         'SCHEDULER_NAME': 'HoyolabCheckInBot'
     }
     config_file = open(os.path.join(app_path, 'config.json'), 'w')
@@ -59,7 +59,7 @@ try:
         cookies = getattr(browser_cookie3, browser)(domain_name=config['DOMAIN_NAME'])
     else:
         raise Exception("ERROR: Browser not defined!")
-except:
+except Exception as e:
     print("Login information not found! Please login first to hoyolab once in Chrome/Firefox/Opera/Edge/Chromium "
           "before using the bot.")
     print("You only need to login once for a year to https://www.hoyolab.com/genshin/ for this bot to work.")
@@ -72,7 +72,7 @@ except:
 
 found = False
 for cookie in cookies:
-    if cookie.name == "cookie_token":
+    if cookie.name == "cookie_token_v2":
         found = True
         break
 if not found:
@@ -108,9 +108,9 @@ def get_daily_status():
     headers = {
         'Accept': 'application/json, text/plain, */*',
         'Accept-Language': 'en-US,en;q=0.5',
-        'Origin': 'https://webstatic-sea.mihoyo.com',
+        'Origin': 'https://act.hoyolab.com',
         'Connection': 'keep-alive',
-        'Referer': f'https://webstatic-sea.mihoyo.com/ys/event/signin-sea/index.html?act_id={config["ACT_ID"]}&lang=en-us',
+        'Referer': f'https://act.hoyolab.com/ys/event/signin-sea-v3/index.html?act_id={config["ACT_ID"]}&lang=en-us',
         'Cache-Control': 'max-age=0',
     }
 
@@ -120,7 +120,7 @@ def get_daily_status():
     )
 
     try:
-        response = requests.get('https://hk4e-api-os.mihoyo.com/event/sol/info',
+        response = requests.get('https://sg-hk4e-api.hoyolab.com/event/sol/info',
                                 headers=headers, params=params, cookies=cookies)
         return response.json()
     except requests.exceptions.ConnectionError as e:
@@ -150,9 +150,9 @@ def claim_reward():
         'Accept': 'application/json, text/plain, */*',
         'Accept-Language': 'en-US,en;q=0.5',
         'Content-Type': 'application/json;charset=utf-8',
-        'Origin': 'https://webstatic-sea.mihoyo.com',
+        'Origin': 'https://act.hoyolab.com',
         'Connection': 'keep-alive',
-        'Referer': f'https://webstatic-sea.mihoyo.com/ys/event/signin- sea/index.html?act_id={config["ACT_ID"]}&lang=en-us',
+        'Referer': f'https://act.hoyolab.com/ys/event/signin-sea-v3/index.html?act_id={config["ACT_ID"]}&lang=en-us',
     }
 
     params = (
@@ -162,7 +162,7 @@ def claim_reward():
     data = {'act_id': config['ACT_ID']}
 
     try:
-        response = requests.post('https://hk4e-api-os.mihoyo.com/event/sol/sign',
+        response = requests.post('https://sg-hk4e-api.hoyolab.com/event/sol/sign',
                                  headers=headers, params=params, cookies=cookies, json=data)
         return response.json()
     except requests.exceptions.ConnectionError as e:
